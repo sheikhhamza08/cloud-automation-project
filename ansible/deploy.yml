@@ -1,0 +1,168 @@
+---
+# =============================================================================
+# Ansible Playbook: deploy.yml
+# Purpose : Build the Docker image and deploy the app via Docker Compose
+# Run     : ansible-playbook deploy.yml -i inventory.ini
+# =============================================================================
+
+- name: Build and Deploy DockerOps HTML App
+  hosts: webservers
+  become: true
+  gather_facts: true
+
+  vars:
+    app_name: "dockerops-app"
+    app_version: "1.0.0"
+    image_tag: "{{ app_name }}:latest"
+    app_dir: "/opt/{{ app_name }}"          # deployment directory on remote host
+    local_src_dir: "../app"     # directory where playbook lives (has Dockerfile etc.)
+
+  # ---------------------------------------------------------------------------
+  # PRE-TASKS
+  # ---------------------------------------------------------------------------
+  pre_tasks:
+    - name: Confirm Docker is running before deploying
+      ansible.builtin.systemd:
+        name: docker
+      register: docker_svc
+
+    - name: Fail if Docker is not active
+      ansible.builtin.assert:
+        that: docker_svc.status.ActiveState == "active"
+        fail_msg: "Docker is not running. Run the docker_setup.yml playbook first."
+        success_msg: "✅ Docker is running. Proceeding with deployment."
+
+  # ---------------------------------------------------------------------------
+  # TASKS
+  # ---------------------------------------------------------------------------
+  tasks:
+
+    # ── 1. PREPARE REMOTE DIRECTORY ───────────────────────────────────────────
+
+    - name: Create application directory on remote host
+      ansible.builtin.file:
+        path: "{{ app_dir }}"
+        state: directory
+        mode: "0755"
+
+    # ── 2. COPY SOURCE FILES TO REMOTE ────────────────────────────────────────
+
+    - name: Copy Dockerfile to remote host
+      ansible.builtin.copy:
+        src: "{{ local_src_dir }}/Dockerfile"
+        dest: "{{ app_dir }}/Dockerfile"
+        mode: "0644"
+
+    - name: Copy NGINX config to remote host
+      ansible.builtin.copy:
+        src: "{{ local_src_dir }}/nginx.conf"
+        dest: "{{ app_dir }}/nginx.conf"
+        mode: "0644"
+
+    - name: Copy HTML app to remote host
+      ansible.builtin.copy:
+        src: "{{ local_src_dir }}/index.html"
+        dest: "{{ app_dir }}/index.html"
+        mode: "0644"
+
+    - name: Copy docker-compose.yml to remote host
+      ansible.builtin.copy:
+        src: "{{ local_src_dir }}/docker-compose.yml"
+        dest: "{{ app_dir }}/docker-compose.yml"
+        mode: "0644"
+
+    # ── 3. BUILD DOCKER IMAGE ─────────────────────────────────────────────────
+
+    - name: Build Docker image from Dockerfile
+      community.docker.docker_image:
+        name: "{{ app_name }}"
+        tag: latest
+        build:
+          path: "{{ app_dir }}"
+          pull: true                  # always pull fresh base image
+        source: build
+        force_source: true            # rebuild even if image already exists
+      register: build_result
+
+    - name: Show image build result
+      ansible.builtin.debug:
+        msg: "Image built: {{ build_result.image.RepoTags }}"
+
+    # ── 4. STOP EXISTING CONTAINERS (graceful update) ─────────────────────────
+
+    - name: Bring down any existing containers
+      community.docker.docker_compose_v2:
+        project_src: "{{ app_dir }}"
+        state: absent
+      ignore_errors: true             # safe to ignore if nothing was running
+
+    # ── 5. DEPLOY WITH DOCKER COMPOSE ─────────────────────────────────────────
+
+    - name: Deploy application with Docker Compose
+      community.docker.docker_compose_v2:
+        project_src: "{{ app_dir }}"
+        state: present
+        pull: never                   # use locally built image
+        recreate: always
+      register: compose_result
+
+    - name: Show compose deployment output
+      ansible.builtin.debug:
+        var: compose_result
+
+    # ── 6. VERIFY DEPLOYMENT ──────────────────────────────────────────────────
+
+    - name: Wait for the container to become healthy
+      ansible.builtin.pause:
+        seconds: 8
+
+    - name: Check that NGINX container is running
+      community.docker.docker_container_info:
+        name: dockerops-webapp
+      register: container_info
+
+    - name: Assert container is running
+      ansible.builtin.assert:
+        that:
+          - container_info.container.State.Running == true
+        success_msg: "✅ Container 'dockerops-webapp' is up and running."
+        fail_msg: "❌ Container failed to start. Check logs: docker logs dockerops-webapp"
+
+    - name: Test HTTP response from NGINX (port 80)
+      ansible.builtin.uri:
+        url: "http://localhost:80"
+        method: GET
+        status_code: 200
+        timeout: 10
+      register: http_check
+
+    - name: Confirm HTTP 200 response
+      ansible.builtin.debug:
+        msg: "✅ App is live! HTTP {{ http_check.status }} received from http://{{ inventory_hostname }}:80"
+
+  # ---------------------------------------------------------------------------
+  # HANDLERS
+  # ---------------------------------------------------------------------------
+  handlers:
+    - name: Restart webapp container
+      community.docker.docker_compose_v2:
+        project_src: "{{ app_dir }}"
+        state: present
+        recreate: always
+
+  # ---------------------------------------------------------------------------
+  # POST-TASKS: Summary
+  # ---------------------------------------------------------------------------
+  post_tasks:
+    - name: Deployment summary
+      ansible.builtin.debug:
+        msg:
+          - "============================================="
+          - "  🚀 Deployment Complete"
+          - "============================================="
+          - "  App     : {{ app_name }} v{{ app_version }}"
+          - "  Image   : {{ image_tag }}"
+          - "  Host    : {{ inventory_hostname }}"
+          - "  URL     : http://{{ inventory_hostname }}:80"
+          - "  Status  : Running ✅"
+          - "============================================="

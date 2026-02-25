@@ -1,0 +1,308 @@
+---
+# =============================================================================
+# Ansible Playbook: Server Configuration & Docker Installation
+# Description: Automates server setup, Docker installation, and configuration
+# Compatible with: Ubuntu 20.04 / 22.04 / Debian-based systems
+# =============================================================================
+
+- name: Configure Server and Install Docker
+  hosts: webservers
+  become: true
+  gather_facts: true
+
+  vars:
+    docker_users:
+      - "{{ ansible_user }}" # Add the SSH user to the docker group
+    docker_compose_version: "v2.24.5"
+    system_packages:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg
+      - lsb-release
+      - software-properties-common
+      - python3-pip
+      - git
+      - wget
+
+  # ---------------------------------------------------------------------------
+  # PRE-TASKS: System checks before main tasks
+  # ---------------------------------------------------------------------------
+  pre_tasks:
+    # - name: Verify target OS is Debian/Ubuntu
+    #   ansible.builtin.assert:
+    #     that:
+    #       - ansible_os_family == "Debian"
+    #     fail_msg: "This playbook only supports Debian/Ubuntu systems."
+    #     success_msg: "OS check passed: {{ ansible_distribution }} {{ ansible_distribution_version }}"
+
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+  # ---------------------------------------------------------------------------
+  # TASKS
+  # ---------------------------------------------------------------------------
+  tasks:
+    # ── 1. SYSTEM ENVIRONMENT CONFIGURATION ───────────────────────────────────
+
+    - name: Set system hostname
+      ansible.builtin.hostname:
+        name: "docker-server"
+
+    # - name: Set timezone to UTC
+    #   community.general.timezone:
+    #     name: UTC
+
+    - name: Install essential system packages
+      ansible.builtin.apt:
+        name: "{{ system_packages }}"
+        state: present
+        update_cache: true
+
+    - name: Configure system limits (ulimits) for Docker workloads
+      ansible.builtin.blockinfile:
+        path: /etc/security/limits.conf
+        marker: "# {mark} ANSIBLE MANAGED - Docker limits"
+        block: |
+          * soft nofile 65536
+          * hard nofile 65536
+          * soft nproc  65536
+          * hard nproc  65536
+
+    # - name: Configure kernel parameters for Docker (sysctl)
+    #   ansible.posix.sysctl:
+    #     name: "{{ item.name }}"
+    #     value: "{{ item.value }}"
+    #     state: present
+    #     reload: true
+    #   loop:
+    #     - { name: "net.ipv4.ip_forward", value: "1" }
+    #     - { name: "net.bridge.bridge-nf-call-iptables", value: "1" }
+    #     - { name: "net.bridge.bridge-nf-call-ip6tables", value: "1" }
+    #     - { name: "vm.max_map_count", value: "262144" }
+    #     - { name: "fs.inotify.max_user_watches", value: "524288" }
+
+    # - name: Load required kernel modules
+    #   community.general.modprobe:
+    #     name: "{{ item }}"
+    #     state: present
+    #   loop:
+    #     - overlay
+    #     - br_netfilter
+
+    # - name: Persist kernel modules across reboots
+    #   ansible.builtin.copy:
+    #     dest: /etc/modules-load.d/docker.conf
+    #     content: |
+    #       overlay
+    #       br_netfilter
+    #     mode: "0644"
+
+    # ── 2. FIREWALL CONFIGURATION ──────────────────────────────────────────────
+
+    # - name: Enable UFW and set default policies
+    #   community.general.ufw:
+    #     state: enabled
+    #     policy: deny
+    #     direction: incoming
+
+    # - name: Allow SSH through firewall
+    #   community.general.ufw:
+    #     rule: allow
+    #     port: "22"
+    #     proto: tcp
+
+    # - name: Allow HTTP through firewall
+    #   community.general.ufw:
+    #     rule: allow
+    #     port: "80"
+    #     proto: tcp
+
+    # - name: Allow HTTPS through firewall
+    #   community.general.ufw:
+    #     rule: allow
+    #     port: "443"
+    #     proto: tcp
+
+    # ── 3. REMOVE OLD DOCKER VERSIONS ─────────────────────────────────────────
+
+    # - name: Remove old/conflicting Docker packages if present
+    #   ansible.builtin.apt:
+    #     name:
+    #       - docker
+    #       - docker-engine
+    #       - docker.io
+    #       - containerd
+    #       - runc
+    #       - docker-compose
+    #     state: absent
+    #     purge: true
+
+    # ── 4. INSTALL DOCKER ENGINE ───────────────────────────────────────────────
+
+    - name: Create directory for Docker GPG key
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: "0755"
+
+    - name: Download Docker official GPG key
+      ansible.builtin.get_url:
+        url: "https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg"
+        dest: /etc/apt/keyrings/docker.asc
+        mode: "0644"
+
+    - name: Add Docker apt repository
+      ansible.builtin.apt_repository:
+        repo: >-
+          deb [arch={{ ansible_architecture | replace('x86_64','amd64') | replace('aarch64','arm64') }}
+          signed-by=/etc/apt/keyrings/docker.asc]
+          https://download.docker.com/linux/{{ ansible_distribution | lower }}
+          {{ ansible_distribution_release }} stable
+        state: present
+        filename: docker
+
+    - name: Install Docker Engine packages
+      ansible.builtin.apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+        update_cache: true
+
+    # ── 5. CONFIGURE DOCKER DAEMON ─────────────────────────────────────────────
+
+    # - name: Create Docker daemon configuration directory
+    #   ansible.builtin.file:
+    #     path: /etc/docker
+    #     state: directory
+    #     mode: "0755"
+
+    # - name: Configure Docker daemon (daemon.json)
+    #   ansible.builtin.copy:
+    #     dest: /etc/docker/daemon.json
+    #     content: |
+    #       {
+    #         "log-driver": "json-file",
+    #         "log-opts": {
+    #           "max-size": "100m",
+    #           "max-file": "3"
+    #         },
+    #         "storage-driver": "overlay2",
+    #         "live-restore": true,
+    #         "userland-proxy": false,
+    #         "default-ulimits": {
+    #           "nofile": {
+    #             "Name": "nofile",
+    #             "Hard": 64000,
+    #             "Soft": 64000
+    #           }
+    #         }
+    #       }
+    #     mode: "0644"
+    #   notify: Restart Docker
+
+    # ── 6. ENABLE & START DOCKER SERVICE ──────────────────────────────────────
+
+    - name: Enable Docker service to start on boot
+      ansible.builtin.systemd:
+        name: docker
+        enabled: true
+        state: started
+        daemon_reload: true
+
+    - name: Enable containerd service to start on boot
+      ansible.builtin.systemd:
+        name: containerd
+        enabled: true
+        state: started
+
+    # ── 7. ADD USERS TO DOCKER GROUP ──────────────────────────────────────────
+
+    - name: Add users to the docker group (allows running Docker without sudo)
+      ansible.builtin.user:
+        name: "{{ item }}"
+        groups: docker
+        append: true
+      loop: "{{ docker_users }}"
+
+    # ── 8. VERIFY DOCKER INSTALLATION ─────────────────────────────────────────
+
+    # - name: Run Docker hello-world to verify installation
+    #   ansible.builtin.command: docker run --rm hello-world
+    #   register: docker_hello
+    #   changed_when: false
+
+    # - name: Display Docker hello-world output
+    #   ansible.builtin.debug:
+    #     msg: "{{ docker_hello.stdout_lines }}"
+
+    # - name: Gather Docker version info
+    #   ansible.builtin.command: docker version --format '{% raw %}{{.Server.Version}}{% endraw %}'
+    #   register: docker_version
+    #   changed_when: false
+
+    # - name: Display installed Docker version
+    #   ansible.builtin.debug:
+    #     msg: "Docker version installed: {{ docker_version.stdout }}"
+
+    # ── 9. INSTALL DOCKER COMPOSE (standalone binary, optional) ───────────────
+
+    # - name: Install Docker Compose standalone binary
+    #   ansible.builtin.get_url:
+    #     url: "https://github.com/docker/compose/releases/download/{{ docker_compose_version }}/docker-compose-linux-{{ ansible_architecture }}"
+    #     dest: /usr/local/bin/docker-compose
+    #     mode: "0755"
+
+    # - name: Verify Docker Compose installation
+    #   ansible.builtin.command: docker-compose version
+    #   register: compose_version
+    #   changed_when: false
+
+    # - name: Display Docker Compose version
+    #   ansible.builtin.debug:
+    #     msg: "{{ compose_version.stdout }}"
+
+  # ---------------------------------------------------------------------------
+  # HANDLERS: Triggered by notify directives
+  # ---------------------------------------------------------------------------
+  handlers:
+    - name: Restart Docker
+      ansible.builtin.systemd:
+        name: docker
+        state: restarted
+        daemon_reload: true
+
+  # ---------------------------------------------------------------------------
+  # POST-TASKS: Verification and summary
+  # ---------------------------------------------------------------------------
+  post_tasks:
+    - name: Verify Docker starts automatically (service is enabled)
+      ansible.builtin.systemd:
+        name: docker
+      register: docker_service_status
+
+    - name: Assert Docker is enabled and running
+      ansible.builtin.assert:
+        that:
+          - docker_service_status.status.ActiveState == "active"
+          - docker_service_status.status.UnitFileState == "enabled"
+        success_msg: "✅ Docker is active and enabled to start on boot."
+        fail_msg: "❌ Docker service check failed. Please investigate."
+
+    - name: Final summary
+      ansible.builtin.debug:
+        msg:
+          - "=============================="
+          - " Server Configuration Summary"
+          - "=============================="
+          - "Host        : {{ inventory_hostname }}"
+          - "OS          : {{ ansible_distribution }} {{ ansible_distribution_version }}"
+          - "Auto-start  : Enabled"
+          - "Docker group: {{ docker_users | join(', ') }}"
+          - "=============================="

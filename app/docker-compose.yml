@@ -1,0 +1,46 @@
+
+
+services:
+
+  # ---------------------------------------------------------------------------
+  # Web App — static HTML served by NGINX
+  # ---------------------------------------------------------------------------
+  webapp:
+    image: dockerops-app:latest          # built by Ansible or manually
+    build:
+      context: .                         # build from current directory
+      dockerfile: Dockerfile
+    container_name: dockerops-webapp
+    restart: unless-stopped             # auto-restart unless manually stopped
+
+    ports:
+      - "80:80"                         # host port 80 → container port 80
+
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+    labels:
+      - "com.project.name=dockerops"
+      - "com.project.component=webapp"
+      - "com.project.version=1.0.0"
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    networks:
+      - webnet
+
+# ---------------------------------------------------------------------------
+# Networks
+# ---------------------------------------------------------------------------
+networks:
+  webnet:
+    driver: bridge
+    name: dockerops-network

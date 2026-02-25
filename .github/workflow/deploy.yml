@@ -1,0 +1,66 @@
+name: Deploy to VM
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+
+  deploy:
+    name: 🚀 Clone, Build & Deploy on VM
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ⬇️ Checkout repository
+        uses: actions/checkout@v4
+
+      # ── Install Ansible on the GitHub runner ──────────────────────────────
+      - name: 🐍 Install Ansible
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install ansible
+
+      - name: 📦 Install Ansible Galaxy collections
+        run: |
+          ansible-galaxy collection install -r requirements.yml
+
+      # ── Write SSH private key so Ansible can reach the VM ─────────────────
+      - name: 🔐 Configure SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VM_SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.VM_HOST }} >> ~/.ssh/known_hosts
+
+      # ── Write inventory pointing at the real VM ────────────────────────────
+      - name: 📝 Generate Ansible inventory
+        run: |
+          cat > inventory.ini <<EOF
+          [servers]
+          ${{ secrets.VM_HOST }} ansible_user=${{ secrets.VM_USER }} ansible_ssh_private_key_file=~/.ssh/deploy_key
+
+          [servers:vars]
+          ansible_python_interpreter=/usr/bin/python3
+          ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+          EOF
+
+      # ── Run the Ansible deploy playbook ───────────────────────────────────
+      - name: 🎯 Run Ansible deploy playbook
+        run: |
+          ansible-playbook deploy.yml \
+            -i inventory.ini \
+            --extra-vars "repo_url=${{ github.server_url }}/${{ github.repository }} repo_branch=${{ github.ref_name }} commit_sha=${{ github.sha }}" \
+            -v
+
+      # ── Smoke test ────────────────────────────────────────────────────────
+      - name: 🔍 Smoke test — verify HTTP 200
+        run: |
+          sleep 5
+          STATUS=$(curl -o /dev/null -s -w "%{http_code}" http://${{ secrets.VM_HOST }}:80)
+          if [ "$STATUS" != "200" ]; then
+            echo "❌ HTTP $STATUS — deployment may have failed."
+            exit 1
+          fi
+          echo "✅ App is live at http://${{ secrets.VM_HOST }} (HTTP $STATUS)"
