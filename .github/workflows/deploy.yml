@@ -22,9 +22,9 @@ jobs:
           python3 -m pip install --upgrade pip
           pip install ansible
 
-      - name: 📦 Install Ansible Galaxy collections
-        run: |
-          ansible-galaxy collection install -r requirements.yml
+      # - name: 📦 Install Ansible Galaxy collections
+      #   run: |
+      #     ansible-galaxy collection install -r requirements.yml
 
       # ── Write SSH private key so Ansible can reach the VM ─────────────────
       - name: 🔐 Configure SSH key
