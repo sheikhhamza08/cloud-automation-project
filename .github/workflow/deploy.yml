@@ -49,7 +49,7 @@ jobs:
       # ── Run the Ansible deploy playbook ───────────────────────────────────
       - name: 🎯 Run Ansible deploy playbook
         run: |
-          ansible-playbook deploy.yml \
+          ansible-playbook ansible/deploy.yml \
             -i inventory.ini \
             --extra-vars "repo_url=${{ github.server_url }}/${{ github.repository }} repo_branch=${{ github.ref_name }} commit_sha=${{ github.sha }}" \
             -v
