@@ -1,482 +1,641 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>DevOps Dashboard</title>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DevOps Dashboard</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
 
-    :root {
-      --bg: #0a0a0f;
-      --surface: #111118;
-      --border: #1e1e2e;
-      --accent: #00ffb2;
-      --accent2: #7c3aed;
-      --accent3: #f59e0b;
-      --text: #e2e8f0;
-      --muted: #64748b;
-      --danger: #ef4444;
-      --success: #10b981;
-    }
+      :root {
+        --bg: #0a0a0f;
+        --surface: #111118;
+        --border: #1e1e2e;
+        --accent: #00ffb2;
+        --accent2: #7c3aed;
+        --accent3: #f59e0b;
+        --text: #e2e8f0;
+        --muted: #64748b;
+        --danger: #ef4444;
+        --success: #10b981;
+      }
 
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'DM Sans', sans-serif;
-      min-height: 100vh;
-      overflow-x: hidden;
-    }
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: "DM Sans", sans-serif;
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
 
-    /* Animated grid background */
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background-image:
-        linear-gradient(rgba(0,255,178,0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0,255,178,0.03) 1px, transparent 1px);
-      background-size: 40px 40px;
-      pointer-events: none;
-      z-index: 0;
-    }
+      /* Animated grid background */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(0, 255, 178, 0.03) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(0, 255, 178, 0.03) 1px, transparent 1px);
+        background-size: 40px 40px;
+        pointer-events: none;
+        z-index: 0;
+      }
 
-    /* Glow orbs */
-    body::after {
-      content: '';
-      position: fixed;
-      top: -200px; left: -200px;
-      width: 600px; height: 600px;
-      background: radial-gradient(circle, rgba(124,58,237,0.12) 0%, transparent 70%);
-      pointer-events: none;
-      z-index: 0;
-      animation: orb-drift 12s ease-in-out infinite alternate;
-    }
+      /* Glow orbs */
+      body::after {
+        content: "";
+        position: fixed;
+        top: -200px;
+        left: -200px;
+        width: 600px;
+        height: 600px;
+        background: radial-gradient(
+          circle,
+          rgba(124, 58, 237, 0.12) 0%,
+          transparent 70%
+        );
+        pointer-events: none;
+        z-index: 0;
+        animation: orb-drift 12s ease-in-out infinite alternate;
+      }
 
-    @keyframes orb-drift {
-      from { transform: translate(0, 0); }
-      to { transform: translate(300px, 200px); }
-    }
+      @keyframes orb-drift {
+        from {
+          transform: translate(0, 0);
+        }
+        to {
+          transform: translate(300px, 200px);
+        }
+      }
 
-    .container {
-      position: relative;
-      z-index: 1;
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 2rem 1.5rem;
-    }
+      .container {
+        position: relative;
+        z-index: 1;
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 2rem 1.5rem;
+      }
 
-    /* Header */
-    header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 3rem;
-      padding-bottom: 1.5rem;
-      border-bottom: 1px solid var(--border);
-      animation: slide-down 0.6s ease forwards;
-    }
+      /* Header */
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 3rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid var(--border);
+        animation: slide-down 0.6s ease forwards;
+      }
 
-    @keyframes slide-down {
-      from { opacity: 0; transform: translateY(-20px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
+      @keyframes slide-down {
+        from {
+          opacity: 0;
+          transform: translateY(-20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
 
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
 
-    .logo-icon {
-      width: 36px; height: 36px;
-      background: var(--accent);
-      border-radius: 8px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.1rem;
-    }
+      .logo-icon {
+        width: 36px;
+        height: 36px;
+        background: var(--accent);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+      }
 
-    .logo-text {
-      font-family: 'Syne', sans-serif;
-      font-size: 1.3rem;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-    }
+      .logo-text {
+        font-family: "Syne", sans-serif;
+        font-size: 1.3rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+      }
 
-    .logo-text span { color: var(--accent); }
+      .logo-text span {
+        color: var(--accent);
+      }
 
-    .status-badge {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      background: rgba(16,185,129,0.1);
-      border: 1px solid rgba(16,185,129,0.3);
-      color: var(--success);
-      padding: 0.4rem 1rem;
-      border-radius: 100px;
-      font-family: 'DM Mono', monospace;
-      font-size: 0.75rem;
-    }
+      .status-badge {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: rgba(16, 185, 129, 0.1);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        color: var(--success);
+        padding: 0.4rem 1rem;
+        border-radius: 100px;
+        font-family: "DM Mono", monospace;
+        font-size: 0.75rem;
+      }
 
-    .pulse {
-      width: 7px; height: 7px;
-      background: var(--success);
-      border-radius: 50%;
-      animation: pulse 2s infinite;
-    }
+      .pulse {
+        width: 7px;
+        height: 7px;
+        background: var(--success);
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+      }
 
-    @keyframes pulse {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.6); }
-      50% { box-shadow: 0 0 0 6px rgba(16,185,129,0); }
-    }
+      @keyframes pulse {
+        0%,
+        100% {
+          box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6);
+        }
+        50% {
+          box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+        }
+      }
 
-    /* Hero section */
-    .hero {
-      text-align: center;
-      margin-bottom: 3.5rem;
-      animation: fade-up 0.7s 0.1s ease both;
-    }
+      /* Hero section */
+      .hero {
+        text-align: center;
+        margin-bottom: 3.5rem;
+        animation: fade-up 0.7s 0.1s ease both;
+      }
 
-    @keyframes fade-up {
-      from { opacity: 0; transform: translateY(24px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
+      @keyframes fade-up {
+        from {
+          opacity: 0;
+          transform: translateY(24px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
 
-    .hero h1 {
-      font-family: 'Syne', sans-serif;
-      font-size: clamp(2.2rem, 5vw, 3.8rem);
-      font-weight: 800;
-      line-height: 1.05;
-      letter-spacing: -0.03em;
-      margin-bottom: 1rem;
-    }
+      .hero h1 {
+        font-family: "Syne", sans-serif;
+        font-size: clamp(2.2rem, 5vw, 3.8rem);
+        font-weight: 800;
+        line-height: 1.05;
+        letter-spacing: -0.03em;
+        margin-bottom: 1rem;
+      }
 
-    .hero h1 .highlight {
-      background: linear-gradient(135deg, var(--accent), #00c8ff);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
+      .hero h1 .highlight {
+        background: linear-gradient(135deg, var(--accent), #00c8ff);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
 
-    .hero p {
-      color: var(--muted);
-      font-size: 1.05rem;
-      font-weight: 300;
-      max-width: 480px;
-      margin: 0 auto;
-      line-height: 1.7;
-    }
+      .hero p {
+        color: var(--muted);
+        font-size: 1.05rem;
+        font-weight: 300;
+        max-width: 480px;
+        margin: 0 auto;
+        line-height: 1.7;
+      }
 
-    /* Stats row */
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 1rem;
-      margin-bottom: 2.5rem;
-      animation: fade-up 0.7s 0.2s ease both;
-    }
+      /* Stats row */
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2.5rem;
+        animation: fade-up 0.7s 0.2s ease both;
+      }
 
-    .stat-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 1.25rem 1.5rem;
-      position: relative;
-      overflow: hidden;
-      transition: border-color 0.3s, transform 0.3s;
-    }
+      .stat-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 1.25rem 1.5rem;
+        position: relative;
+        overflow: hidden;
+        transition:
+          border-color 0.3s,
+          transform 0.3s;
+      }
 
-    .stat-card:hover {
-      border-color: rgba(0,255,178,0.3);
-      transform: translateY(-2px);
-    }
+      .stat-card:hover {
+        border-color: rgba(0, 255, 178, 0.3);
+        transform: translateY(-2px);
+      }
 
-    .stat-card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 2px;
-      background: var(--card-accent, var(--accent));
-      border-radius: 2px 2px 0 0;
-    }
+      .stat-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--card-accent, var(--accent));
+        border-radius: 2px 2px 0 0;
+      }
 
-    .stat-label {
-      font-family: 'DM Mono', monospace;
-      font-size: 0.7rem;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      margin-bottom: 0.5rem;
-    }
+      .stat-label {
+        font-family: "DM Mono", monospace;
+        font-size: 0.7rem;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.5rem;
+      }
 
-    .stat-value {
-      font-family: 'Syne', sans-serif;
-      font-size: 1.9rem;
-      font-weight: 800;
-      color: var(--card-accent, var(--accent));
-      line-height: 1;
-    }
+      .stat-value {
+        font-family: "Syne", sans-serif;
+        font-size: 1.9rem;
+        font-weight: 800;
+        color: var(--card-accent, var(--accent));
+        line-height: 1;
+      }
 
-    .stat-sub {
-      font-size: 0.75rem;
-      color: var(--muted);
-      margin-top: 0.3rem;
-    }
+      .stat-sub {
+        font-size: 0.75rem;
+        color: var(--muted);
+        margin-top: 0.3rem;
+      }
 
-    /* Services grid */
-    .section-title {
-      font-family: 'DM Mono', monospace;
-      font-size: 0.72rem;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      margin-bottom: 1rem;
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
+      /* Services grid */
+      .section-title {
+        font-family: "DM Mono", monospace;
+        font-size: 0.72rem;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
 
-    .section-title::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: var(--border);
-    }
+      .section-title::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+      }
 
-    .services {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 1rem;
-      margin-bottom: 2.5rem;
-      animation: fade-up 0.7s 0.3s ease both;
-    }
+      .services {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2.5rem;
+        animation: fade-up 0.7s 0.3s ease both;
+      }
 
-    .service-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 1.5rem;
-      display: flex;
-      gap: 1rem;
-      align-items: flex-start;
-      transition: all 0.3s;
-      cursor: default;
-    }
+      .service-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 1.5rem;
+        display: flex;
+        gap: 1rem;
+        align-items: flex-start;
+        transition: all 0.3s;
+        cursor: default;
+      }
 
-    .service-card:hover {
-      border-color: rgba(0,255,178,0.25);
-      background: #13131c;
-      transform: translateX(4px);
-    }
+      .service-card:hover {
+        border-color: rgba(0, 255, 178, 0.25);
+        background: #13131c;
+        transform: translateX(4px);
+      }
 
-    .service-icon {
-      width: 42px; height: 42px;
-      border-radius: 10px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.2rem;
-      flex-shrink: 0;
-    }
+      .service-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        flex-shrink: 0;
+      }
 
-    .service-info { flex: 1; }
+      .service-info {
+        flex: 1;
+      }
 
-    .service-name {
-      font-family: 'Syne', sans-serif;
-      font-weight: 700;
-      font-size: 0.95rem;
-      margin-bottom: 0.25rem;
-    }
+      .service-name {
+        font-family: "Syne", sans-serif;
+        font-weight: 700;
+        font-size: 0.95rem;
+        margin-bottom: 0.25rem;
+      }
 
-    .service-desc {
-      font-size: 0.8rem;
-      color: var(--muted);
-      line-height: 1.5;
-    }
+      .service-desc {
+        font-size: 0.8rem;
+        color: var(--muted);
+        line-height: 1.5;
+      }
 
-    .service-status {
-      font-family: 'DM Mono', monospace;
-      font-size: 0.68rem;
-      padding: 0.2rem 0.6rem;
-      border-radius: 100px;
-      margin-top: 0.6rem;
-      display: inline-block;
-    }
+      .service-status {
+        font-family: "DM Mono", monospace;
+        font-size: 0.68rem;
+        padding: 0.2rem 0.6rem;
+        border-radius: 100px;
+        margin-top: 0.6rem;
+        display: inline-block;
+      }
 
-    .status-running { background: rgba(16,185,129,0.12); color: var(--success); border: 1px solid rgba(16,185,129,0.25); }
-    .status-idle    { background: rgba(245,158,11,0.12);  color: var(--accent3); border: 1px solid rgba(245,158,11,0.25); }
-    .status-stopped { background: rgba(239,68,68,0.12);   color: var(--danger);  border: 1px solid rgba(239,68,68,0.25); }
+      .status-running {
+        background: rgba(16, 185, 129, 0.12);
+        color: var(--success);
+        border: 1px solid rgba(16, 185, 129, 0.25);
+      }
+      .status-idle {
+        background: rgba(245, 158, 11, 0.12);
+        color: var(--accent3);
+        border: 1px solid rgba(245, 158, 11, 0.25);
+      }
+      .status-stopped {
+        background: rgba(239, 68, 68, 0.12);
+        color: var(--danger);
+        border: 1px solid rgba(239, 68, 68, 0.25);
+      }
 
-    /* Terminal block */
-    .terminal {
-      background: #080810;
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      overflow: hidden;
-      margin-bottom: 2.5rem;
-      animation: fade-up 0.7s 0.4s ease both;
-    }
+      /* Terminal block */
+      .terminal {
+        background: #080810;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        overflow: hidden;
+        margin-bottom: 2.5rem;
+        animation: fade-up 0.7s 0.4s ease both;
+      }
 
-    .terminal-bar {
-      background: #111118;
-      padding: 0.75rem 1rem;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      border-bottom: 1px solid var(--border);
-    }
+      .terminal-bar {
+        background: #111118;
+        padding: 0.75rem 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        border-bottom: 1px solid var(--border);
+      }
 
-    .dot { width: 10px; height: 10px; border-radius: 50%; }
-    .dot-r { background: #ff5f57; }
-    .dot-y { background: #febc2e; }
-    .dot-g { background: #28c840; }
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+      }
+      .dot-r {
+        background: #ff5f57;
+      }
+      .dot-y {
+        background: #febc2e;
+      }
+      .dot-g {
+        background: #28c840;
+      }
 
-    .terminal-title {
-      font-family: 'DM Mono', monospace;
-      font-size: 0.72rem;
-      color: var(--muted);
-      margin-left: 0.5rem;
-    }
+      .terminal-title {
+        font-family: "DM Mono", monospace;
+        font-size: 0.72rem;
+        color: var(--muted);
+        margin-left: 0.5rem;
+      }
 
-    .terminal-body {
-      padding: 1.5rem;
-      font-family: 'DM Mono', monospace;
-      font-size: 0.8rem;
-      line-height: 2;
-    }
+      .terminal-body {
+        padding: 1.5rem;
+        font-family: "DM Mono", monospace;
+        font-size: 0.8rem;
+        line-height: 2;
+      }
 
-    .t-prompt { color: var(--accent); }
-    .t-cmd    { color: var(--text); }
-    .t-out    { color: var(--muted); }
-    .t-ok     { color: var(--success); }
-    .t-warn   { color: var(--accent3); }
-    .t-cursor {
-      display: inline-block;
-      width: 8px; height: 14px;
-      background: var(--accent);
-      vertical-align: middle;
-      animation: blink 1s step-end infinite;
-    }
+      .t-prompt {
+        color: var(--accent);
+      }
+      .t-cmd {
+        color: var(--text);
+      }
+      .t-out {
+        color: var(--muted);
+      }
+      .t-ok {
+        color: var(--success);
+      }
+      .t-warn {
+        color: var(--accent3);
+      }
+      .t-cursor {
+        display: inline-block;
+        width: 8px;
+        height: 14px;
+        background: var(--accent);
+        vertical-align: middle;
+        animation: blink 1s step-end infinite;
+      }
 
-    @keyframes blink {
-      0%,100% { opacity: 1; } 50% { opacity: 0; }
-    }
+      @keyframes blink {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0;
+        }
+      }
 
-    /* Footer */
-    footer {
-      text-align: center;
-      padding-top: 2rem;
-      border-top: 1px solid var(--border);
-      font-size: 0.78rem;
-      color: var(--muted);
-      font-family: 'DM Mono', monospace;
-      animation: fade-up 0.7s 0.5s ease both;
-    }
+      /* Footer */
+      footer {
+        text-align: center;
+        padding-top: 2rem;
+        border-top: 1px solid var(--border);
+        font-size: 0.78rem;
+        color: var(--muted);
+        font-family: "DM Mono", monospace;
+        animation: fade-up 0.7s 0.5s ease both;
+      }
 
-    footer span { color: var(--accent); }
-  </style>
-</head>
-<body>
-  <div class="container">
+      footer span {
+        color: var(--accent);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <div class="logo">
+          <div class="logo-icon">🐳</div>
+          <div class="logo-text">Docker<span>Ops</span></div>
+        </div>
+        <div class="status-badge">
+          <div class="pulse"></div>
+          All systems operational
+        </div>
+      </header>
 
-    <header>
-      <div class="logo">
-        <div class="logo-icon">🐳</div>
-        <div class="logo-text">Docker<span>Ops</span></div>
+      <div
+        class="github-badge"
+        style="
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          background: rgba(0, 255, 178, 0.05);
+          border: 1px solid rgba(0, 255, 178, 0.2);
+          padding: 0.4rem 1rem;
+          border-radius: 100px;
+          margin-left: 1rem;
+        "
+      >
+        <svg height="20" width="20" viewBox="0 0 16 16" style="fill: #00ffb2">
+          <path
+            d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"
+          ></path>
+        </svg>
+        <span
+          style="
+            font-family: &quot;DM Mono&quot;, monospace;
+            font-size: 0.7rem;
+            color: #00ffb2;
+          "
+          >Deployed via GitHub Actions</span
+        >
       </div>
-      <div class="status-badge">
-        <div class="pulse"></div>
-        All systems operational
-      </div>
-    </header>
 
-    <div class="hero">
-      <h1>Infrastructure<br><span class="highlight">at your fingertips</span></h1>
-      <p>Containerised app served via NGINX provisioned by Ansible, orchestrated by Docker Compose.</p>
-    </div>
+      <div class="hero">
+        <h1>
+          Infrastructure<br /><span class="highlight">at your fingertips</span>
+        </h1>
+        <p>
+          Containerised app served via NGINX provisioned by Ansible,
+          orchestrated by Docker Compose.
+        </p>
+      </div>
 
-    <div class="stats">
-      <div class="stat-card" style="--card-accent: #00ffb2">
-        <div class="stat-label">Containers</div>
-        <div class="stat-value">3</div>
-        <div class="stat-sub">2 running · 1 idle</div>
-      </div>
-      <div class="stat-card" style="--card-accent: #7c3aed">
-        <div class="stat-label">Uptime</div>
-        <div class="stat-value">99.9%</div>
-        <div class="stat-sub">Last 30 days</div>
-      </div>
-      <div class="stat-card" style="--card-accent: #f59e0b">
-        <div class="stat-label">Image Size</div>
-        <div class="stat-value">23mb</div>
-        <div class="stat-sub">nginx:alpine base</div>
-      </div>
-      <div class="stat-card" style="--card-accent: #00c8ff">
-        <div class="stat-label">Deploy Time</div>
-        <div class="stat-value">8s</div>
-        <div class="stat-sub">Ansible playbook</div>
-      </div>
-    </div>
-
-    <div class="section-title">Active Services</div>
-    <div class="services">
-      <div class="service-card">
-        <div class="service-icon" style="background: rgba(0,255,178,0.1)">🌐</div>
-        <div class="service-info">
-          <div class="service-name">NGINX Reverse Proxy</div>
-          <div class="service-desc">Serves static content on port 80. Handles all incoming HTTP traffic.</div>
-          <div class="service-status status-running">● running</div>
+      <div class="stats">
+        <div class="stat-card" style="--card-accent: #00ffb2">
+          <div class="stat-label">Containers</div>
+          <div class="stat-value">3</div>
+          <div class="stat-sub">2 running · 1 idle</div>
+        </div>
+        <div class="stat-card" style="--card-accent: #7c3aed">
+          <div class="stat-label">Uptime</div>
+          <div class="stat-value">99.9%</div>
+          <div class="stat-sub">Last 30 days</div>
+        </div>
+        <div class="stat-card" style="--card-accent: #f59e0b">
+          <div class="stat-label">Image Size</div>
+          <div class="stat-value">23mb</div>
+          <div class="stat-sub">nginx:alpine base</div>
+        </div>
+        <div class="stat-card" style="--card-accent: #00c8ff">
+          <div class="stat-label">Deploy Time</div>
+          <div class="stat-value">8s</div>
+          <div class="stat-sub">Ansible playbook</div>
         </div>
       </div>
-      <div class="service-card">
-        <div class="service-icon" style="background: rgba(124,58,237,0.1)">🐳</div>
-        <div class="service-info">
-          <div class="service-name">Docker Engine</div>
-          <div class="service-desc">Container runtime, enabled at boot via systemd.</div>
-          <div class="service-status status-running">● running</div>
+
+      <div class="section-title">Active Services</div>
+      <div class="services">
+        <div class="service-card">
+          <div class="service-icon" style="background: rgba(0, 255, 178, 0.1)">
+            🌐
+          </div>
+          <div class="service-info">
+            <div class="service-name">NGINX Reverse Proxy</div>
+            <div class="service-desc">
+              Serves static content on port 80. Handles all incoming HTTP
+              traffic.
+            </div>
+            <div class="service-status status-running">● running</div>
+          </div>
+        </div>
+        <div class="service-card">
+          <div class="service-icon" style="background: rgba(124, 58, 237, 0.1)">
+            🐳
+          </div>
+          <div class="service-info">
+            <div class="service-name">Docker Engine</div>
+            <div class="service-desc">
+              Container runtime, enabled at boot via systemd.
+            </div>
+            <div class="service-status status-running">● running</div>
+          </div>
+        </div>
+        <div class="service-card">
+          <div class="service-icon" style="background: rgba(245, 158, 11, 0.1)">
+            ⚙️
+          </div>
+          <div class="service-info">
+            <div class="service-name">Ansible Automation</div>
+            <div class="service-desc">
+              Config management: provisioning, image build, container launch.
+            </div>
+            <div class="service-status status-idle">◐ standby</div>
+          </div>
+        </div>
+        <div class="service-card">
+          <div class="service-icon" style="background: rgba(0, 200, 255, 0.1)">
+            📦
+          </div>
+          <div class="service-info">
+            <div class="service-name">Docker Compose</div>
+            <div class="service-desc">
+              Orchestrates multi-container setup with single command
+              deployments.
+            </div>
+            <div class="service-status status-running">● running</div>
+          </div>
         </div>
       </div>
-      <div class="service-card">
-        <div class="service-icon" style="background: rgba(245,158,11,0.1)">⚙️</div>
-        <div class="service-info">
-          <div class="service-name">Ansible Automation</div>
-          <div class="service-desc">Config management: provisioning, image build, container launch.</div>
-          <div class="service-status status-idle">◐ standby</div>
+
+      <div class="section-title">Deployment Log</div>
+      <div class="terminal">
+        <div class="terminal-bar">
+          <div class="dot dot-r"></div>
+          <div class="dot dot-y"></div>
+          <div class="dot dot-g"></div>
+          <div class="terminal-title">ansible-playbook deploy.yml</div>
+        </div>
+        <div class="terminal-body">
+          <div>
+            <span class="t-prompt">$</span>
+            <span class="t-cmd"
+              >ansible-playbook deploy.yml -i inventory.ini</span
+            >
+          </div>
+          <div class="t-out">
+            PLAY [Build and Deploy Docker App] **********************
+          </div>
+          <div class="t-ok">
+            TASK [Build Docker image] .......................... ok
+          </div>
+          <div class="t-ok">
+            TASK [Run docker compose up] ....................... ok
+          </div>
+          <div class="t-ok">
+            TASK [Verify NGINX container running] .............. ok
+          </div>
+          <div class="t-ok">
+            TASK [Assert app reachable on port 80] ............. ok
+          </div>
+          <div class="t-out">PLAY RECAP: localhost ok=4 changed=2 failed=0</div>
+          <div>
+            <span class="t-prompt">$</span> <span class="t-cursor"></span>
+          </div>
         </div>
       </div>
-      <div class="service-card">
-        <div class="service-icon" style="background: rgba(0,200,255,0.1)">📦</div>
-        <div class="service-info">
-          <div class="service-name">Docker Compose</div>
-          <div class="service-desc">Orchestrates multi-container setup with single command deployments.</div>
-          <div class="service-status status-running">● running</div>
-        </div>
-      </div>
+
+      <footer>
+        Built with <span>Docker · NGINX · Ansible</span> &nbsp;·&nbsp; Served on
+        port <span>80</span>
+      </footer>
     </div>
-
-    <div class="section-title">Deployment Log</div>
-    <div class="terminal">
-      <div class="terminal-bar">
-        <div class="dot dot-r"></div>
-        <div class="dot dot-y"></div>
-        <div class="dot dot-g"></div>
-        <div class="terminal-title">ansible-playbook deploy.yml</div>
-      </div>
-      <div class="terminal-body">
-        <div><span class="t-prompt">$</span> <span class="t-cmd">ansible-playbook deploy.yml -i inventory.ini</span></div>
-        <div class="t-out">PLAY [Build and Deploy Docker App] **********************</div>
-        <div class="t-ok">TASK [Build Docker image] .......................... ok</div>
-        <div class="t-ok">TASK [Run docker compose up] ....................... ok</div>
-        <div class="t-ok">TASK [Verify NGINX container running] .............. ok</div>
-        <div class="t-ok">TASK [Assert app reachable on port 80] ............. ok</div>
-        <div class="t-out">PLAY RECAP: localhost ok=4  changed=2  failed=0</div>
-        <div><span class="t-prompt">$</span> <span class="t-cursor"></span></div>
-      </div>
-    </div>
-
-    <footer>
-      Built with <span>Docker · NGINX · Ansible</span> &nbsp;·&nbsp; Served on port <span>80</span>
-    </footer>
-
-  </div>
-</body>
+  </body>
 </html>
